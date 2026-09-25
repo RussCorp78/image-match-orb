@@ -6,6 +6,13 @@
       "name": "Tintin & the Guard",
       "info": "This is the first test image. Replace this text with your own information.",
       "url": "https://en.wikipedia.org/wiki/The_Adventures_of_Tintin"
+    },
+    {
+      "id": "miles",
+      "image": "milbo.jpg",
+      "name": "Miles' Room",
+      "info": "This is Miles' window sill, be afraid...",
+      "url": "https://en.wikipedia.org/wiki/Pennywise"
     }
   ]
 }
