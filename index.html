@@ -5,125 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Image Match Proof of Concept</title>
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: #111;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-  }
-  h1 { font-size: 22px; margin: 14px 10px 6px; }
-  #status {
-    margin: 6px auto 10px;
-    padding: 9px 12px;
-    width: min(94vw, 700px);
-    border-radius: 10px;
-    background: #333;
-    font-weight: bold;
-  }
-  #cameraWrap {
-    position: relative;
-    width: min(96vw, 900px);
-    margin: auto;
-    overflow: hidden;
-    border-radius: 12px;
-    background: #000;
-  }
-  video {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-  #guide {
-    position: absolute;
-    left: 5%;
-    right: 5%;
-    top: 8%;
-    bottom: 8%;
-    border: 2px solid rgba(255,255,255,.65);
-    border-radius: 12px;
-    pointer-events: none;
-  }
-  button {
-    border: 0;
-    border-radius: 9px;
-    padding: 12px 18px;
-    margin: 10px 4px;
-    font-size: 16px;
-    font-weight: bold;
-  }
-  #result {
-    width: min(94vw, 700px);
-    margin: 10px auto;
-    padding: 12px;
-    background: #222;
-    border-radius: 10px;
-    min-height: 48px;
-  }
-  #details {
-    width: min(94vw, 700px);
-    margin: 10px auto 20px;
-    text-align: left;
-    background: #1c1c1c;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 14px;
-    line-height: 1.45;
-  }
-  canvas { display:none; }
-  .match { background: #145c2a !important; }
-  .warn { background: #694b00 !important; }
+* { box-sizing: border-box; }
+body { margin:0; background:#111; color:white; font-family:Arial,sans-serif; text-align:center; }
+h1 { font-size:22px; margin:14px 10px 6px; }
+#status { margin:6px auto 10px; padding:9px 12px; width:min(94vw,700px); border-radius:10px; background:#333; font-weight:bold; }
+#cameraWrap { position:relative; width:min(96vw,900px); margin:auto; overflow:hidden; border-radius:12px; background:#000; }
+video { display:block; width:100%; height:auto; }
+#guide { position:absolute; left:5%; right:5%; top:8%; bottom:8%; border:2px solid rgba(255,255,255,.65); border-radius:12px; pointer-events:none; }
+button { border:0; border-radius:9px; padding:12px 18px; margin:10px 4px; font-size:16px; font-weight:bold; }
+#result { width:min(94vw,700px); margin:10px auto; padding:12px; background:#222; border-radius:10px; min-height:48px; }
+#details { width:min(94vw,700px); margin:10px auto 20px; text-align:left; background:#1c1c1c; padding:12px; border-radius:10px; font-size:14px; line-height:1.45; }
+canvas { display:none; }
+.match { background:#145c2a !important; }
+.warn { background:#694b00 !important; }
 
-  #infoModal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    inset: 0;
-    background: rgba(0,0,0,.72);
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  #infoCard {
-    width: min(92vw, 520px);
-    max-height: 82vh;
-    overflow: auto;
-    background: white;
-    color: #222;
-    border-radius: 18px;
-    padding: 22px;
-    text-align: left;
-    box-shadow: 0 10px 40px rgba(0,0,0,.45);
-  }
-  #infoCard h2 {
-    margin: 0 0 10px;
-    font-size: 24px;
-  }
-  #infoCard p {
-    line-height: 1.5;
-    margin: 8px 0 18px;
-  }
-  #openLink {
-    display: inline-block;
-    background: #222;
-    color: white;
-    text-decoration: none;
-    padding: 11px 16px;
-    border-radius: 9px;
-    font-weight: bold;
-    margin-right: 8px;
-  }
-  #closeModal {
-    border: 0;
-    background: #ddd;
-    color: #222;
-    padding: 11px 16px;
-    border-radius: 9px;
-    font-weight: bold;
-    margin: 0;
-  }
-
+#infoModal {
+  display:none; position:fixed; z-index:9999; inset:0;
+  background:rgba(0,0,0,.72); align-items:center; justify-content:center; padding:20px;
+}
+#infoCard {
+  width:min(92vw,520px); max-height:82vh; overflow:auto;
+  background:white; color:#222; border-radius:18px; padding:22px;
+  text-align:left; box-shadow:0 10px 40px rgba(0,0,0,.45);
+}
+#infoCard h2 { margin:0 0 10px; font-size:24px; }
+#infoCard p { line-height:1.5; margin:8px 0 18px; }
+#openLink {
+  display:inline-block; background:#222; color:white; text-decoration:none;
+  padding:11px 16px; border-radius:9px; font-weight:bold; margin-right:8px;
+}
+#closeModal { border:0; background:#ddd; color:#222; padding:11px 16px; border-radius:9px; font-weight:bold; margin:0; }
 </style>
 </head>
 <body>
@@ -139,16 +50,14 @@
 <button id="startBtn">Start camera</button>
 <button id="stopBtn">Stop</button>
 
-<div id="result">Point the camera at the reference image.</div>
+<div id="result">Point the camera at a reference image.</div>
 
 <div id="details">
-  <b>Reference:</b> target.jpg<br>
-  <b>Method:</b> ORB feature matching + geometric verification<br>
-  <b>Reference features:</b> <span id="refFeatures">—</span><br>
+  <b>Known images:</b> <span id="knownImages">—</span><br>
+  <b>Current best match:</b> <span id="bestMatch">—</span><br>
   <b>Good matches:</b> <span id="goodMatches">—</span><br>
   <b>Verified matches:</b> <span id="verifiedMatches">—</span>
 </div>
-
 
 <div id="infoModal">
   <div id="infoCard">
@@ -166,60 +75,20 @@
 let video, canvas, ctx;
 let stream = null;
 let running = false;
-let referenceReady = false;
-let refGray = null;
-let refKeypoints = null;
-let refDescriptors = null;
+let referenceImages = [];
 let orb = null;
-let matcher = null;
 let lastProcess = 0;
 let matchLockUntil = 0;
+let popupShown = false;
+let currentMatchedId = null;
+let waitingForNewMatch = false;
+let clearCounter = 0;
 
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
-const refFeaturesEl = document.getElementById("refFeatures");
+const bestMatchEl = document.getElementById("bestMatch");
 const goodMatchesEl = document.getElementById("goodMatches");
 const verifiedMatchesEl = document.getElementById("verifiedMatches");
-
-
-let matchData = null;
-let popupShown = false;
-
-async function loadMatchData() {
-  try {
-    const response = await fetch("data.json");
-    matchData = await response.json();
-    setStatus("Ready — start the camera");
-  } catch (e) {
-    setStatus("Could not load data.json", "warn");
-    console.error(e);
-  }
-}
-
-function showInfoPopup() {
-  if (!matchData || !matchData.matches || !matchData.matches.length) return;
-
-  const item = matchData.matches[0];
-
-  document.getElementById("infoTitle").textContent = item.name;
-  document.getElementById("infoText").textContent = item.info;
-
-  const link = document.getElementById("openLink");
-  if (item.url) {
-    link.href = item.url;
-    link.style.display = "inline-block";
-  } else {
-    link.style.display = "none";
-  }
-
-  document.getElementById("infoModal").style.display = "flex";
-  popupShown = true;
-}
-
-function closeInfoPopup() {
-  document.getElementById("infoModal").style.display = "none";
-  popupShown = false;
-}
 
 function setStatus(text, cls="") {
   statusEl.textContent = text;
@@ -230,42 +99,59 @@ function opencvReady() {
   return typeof cv !== "undefined" && cv.Mat;
 }
 
-function prepareReference() {
-  const img = new Image();
-  img.onload = () => {
+async function loadMatchData() {
+  const response = await fetch("data.json");
+  const data = await response.json();
+
+  if (!data.matches || !data.matches.length) {
+    throw new Error("No matches found in data.json");
+  }
+
+  referenceImages = [];
+
+  for (const item of data.matches) {
+    const img = await loadImage(item.image);
     const temp = document.createElement("canvas");
     const max = 1000;
     const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
     temp.width = Math.round(img.naturalWidth * scale);
     temp.height = Math.round(img.naturalHeight * scale);
-    const tctx = temp.getContext("2d");
-    tctx.drawImage(img, 0, 0, temp.width, temp.height);
+    temp.getContext("2d").drawImage(img, 0, 0, temp.width, temp.height);
 
     const mat = cv.imread(temp);
-    refGray = new cv.Mat();
-    cv.cvtColor(mat, refGray, cv.COLOR_RGBA2GRAY);
+    const gray = new cv.Mat();
+    cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY);
 
-    orb = new cv.ORB(1200);
-    refKeypoints = new cv.KeyPointVector();
-    refDescriptors = new cv.Mat();
+    const keypoints = new cv.KeyPointVector();
+    const descriptors = new cv.Mat();
+    orb.detectAndCompute(gray, new cv.Mat(), keypoints, descriptors);
 
-    orb.detectAndCompute(refGray, new cv.Mat(), refKeypoints, refDescriptors);
-
-    matcher = new cv.BFMatcher(cv.NORM_HAMMING, false);
-
-    refFeaturesEl.textContent = refKeypoints.size;
-    referenceReady = true;
+    referenceImages.push({
+      data: item,
+      gray: gray,
+      keypoints: keypoints,
+      descriptors: descriptors
+    });
 
     mat.delete();
-    setStatus("Ready — start the camera");
-  };
-  img.onerror = () => setStatus("Could not load target.jpg", "warn");
-  img.src = "target.jpg";
+  }
+
+  document.getElementById("knownImages").textContent = referenceImages.length;
+  setStatus("Ready — start the camera");
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not load " + src));
+    img.src = src;
+  });
 }
 
 function startCamera() {
-  if (!referenceReady) {
-    resultEl.textContent = "Reference image is still loading.";
+  if (!referenceImages.length) {
+    resultEl.textContent = "Reference images are still loading.";
     return;
   }
 
@@ -275,12 +161,14 @@ function startCamera() {
       width: { ideal: 1280 },
       height: { ideal: 720 }
     },
-    audio: false
+    audio:false
   }).then(s => {
     stream = s;
     video.srcObject = stream;
     running = true;
-    setStatus("Camera running — point at the image");
+    waitingForNewMatch = false;
+    currentMatchedId = null;
+    setStatus("Camera running — point at an image");
     resultEl.textContent = "Looking for a match…";
     requestAnimationFrame(loop);
   }).catch(err => {
@@ -298,143 +186,189 @@ function stopCamera() {
   setStatus("Camera stopped");
 }
 
-function processFrame() {
-  if (!video.videoWidth || !referenceReady) return;
+function findBestMatch(frameGray) {
+  let best = null;
 
-  // Keep the processing image modest in size for iPhone performance.
-  const maxWidth = 900;
-  const scale = Math.min(1, maxWidth / video.videoWidth);
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  for (const ref of referenceImages) {
+    if (ref.descriptors.empty()) continue;
 
-  const frame = cv.imread(canvas);
-  const gray = new cv.Mat();
-  cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+    const kp = new cv.KeyPointVector();
+    const desc = new cv.Mat();
+    orb.detectAndCompute(frameGray, new cv.Mat(), kp, desc);
 
-  const kp = new cv.KeyPointVector();
-  const desc = new cv.Mat();
-  orb.detectAndCompute(gray, new cv.Mat(), kp, desc);
+    if (desc.empty()) {
+      kp.delete(); desc.delete();
+      continue;
+    }
 
-  if (!desc.empty() && !refDescriptors.empty()) {
+    const matcher = new cv.BFMatcher(cv.NORM_HAMMING, false);
     const knn = new cv.DMatchVectorVector();
-    matcher.knnMatch(refDescriptors, desc, knn, 2);
+    matcher.knnMatch(ref.descriptors, desc, knn, 2);
 
     let good = 0;
     const srcPts = [];
     const dstPts = [];
 
-    for (let i = 0; i < knn.size(); i++) {
+    for (let i=0; i<knn.size(); i++) {
       const pair = knn.get(i);
       if (pair.size() >= 2) {
-        const m1 = pair.get(0);
-        const m2 = pair.get(1);
-
-        // Lowe ratio test.
+        const m1 = pair.get(0), m2 = pair.get(1);
         if (m1.distance < 0.72 * m2.distance) {
           good++;
-          const a = refKeypoints.get(m1.queryIdx).pt;
+          const a = ref.keypoints.get(m1.queryIdx).pt;
           const b = kp.get(m1.trainIdx).pt;
-          srcPts.push(a.x, a.y);
-          dstPts.push(b.x, b.y);
+          srcPts.push(a.x,a.y);
+          dstPts.push(b.x,b.y);
         }
       }
     }
 
     let verified = 0;
-
-    // Homography verification makes this much more robust than simply
-    // counting visually similar features.
     if (good >= 8) {
-      const src = cv.matFromArray(good, 1, cv.CV_32FC2, srcPts);
-      const dst = cv.matFromArray(good, 1, cv.CV_32FC2, dstPts);
+      const src = cv.matFromArray(good,1,cv.CV_32FC2,srcPts);
+      const dst = cv.matFromArray(good,1,cv.CV_32FC2,dstPts);
       const mask = new cv.Mat();
-
       try {
-        cv.findHomography(src, dst, cv.RANSAC, 5, mask);
-        for (let i = 0; i < mask.rows; i++) {
-          if (mask.data[i]) verified++;
-        }
+        cv.findHomography(src,dst,cv.RANSAC,5,mask);
+        for (let i=0; i<mask.rows; i++) if (mask.data[i]) verified++;
       } catch(e) {}
-
-      src.delete();
-      dst.delete();
-      mask.delete();
+      src.delete(); dst.delete(); mask.delete();
     }
 
-    goodMatchesEl.textContent = good;
-    verifiedMatchesEl.textContent = verified;
-
-    // Initial threshold. We'll tune this after testing on the real image.
-    if (verified >= 12 && good >= 18 && Date.now() > matchLockUntil) {
-      resultEl.textContent = "✓ IMAGE MATCHED";
-      resultEl.className = "match";
-      setStatus("Match found!", "match");
-      matchLockUntil = Date.now() + 2500;
-
-      // Show the information stored in data.json.
-      if (!popupShown) showInfoPopup();
-    } else if (Date.now() > matchLockUntil) {
-      resultEl.textContent = "Looking for a match…";
-      resultEl.className = "";
+    if (!best || verified > best.verified || (verified === best.verified && good > best.good)) {
+      best = { ref, good, verified };
     }
 
-    knn.delete();
+    knn.delete(); matcher.delete(); kp.delete(); desc.delete();
+  }
+
+  return best;
+}
+
+function showInfoPopup(item) {
+  document.getElementById("infoTitle").textContent = item.name || "Match found";
+  document.getElementById("infoText").textContent = item.info || "";
+
+  const link = document.getElementById("openLink");
+  if (item.url) {
+    link.href = item.url;
+    link.style.display = "inline-block";
+  } else {
+    link.style.display = "none";
+  }
+
+  document.getElementById("infoModal").style.display = "flex";
+  popupShown = true;
+}
+
+function closeInfoPopup() {
+  document.getElementById("infoModal").style.display = "none";
+  popupShown = false;
+
+  // Clear "match found" immediately after closing.
+  resultEl.textContent = "Looking for a new match…";
+  resultEl.className = "";
+  setStatus("Camera running — point at another image");
+
+  // Don't immediately reopen while the same image is still in view.
+  waitingForNewMatch = true;
+  clearCounter = 0;
+}
+
+function processFrame() {
+  if (!video.videoWidth || !referenceImages.length) return;
+
+  const maxWidth = 900;
+  const scale = Math.min(1, maxWidth / video.videoWidth);
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  const frame = cv.imread(canvas);
+  const gray = new cv.Mat();
+  cv.cvtColor(frame,gray,cv.COLOR_RGBA2GRAY);
+
+  const best = findBestMatch(gray);
+
+  if (best) {
+    bestMatchEl.textContent = best.ref.data.name || best.ref.data.id;
+    goodMatchesEl.textContent = best.good;
+    verifiedMatchesEl.textContent = best.verified;
+
+    const isStrong = best.verified >= 12 && best.good >= 18;
+
+    if (waitingForNewMatch) {
+      // Require several consecutive weak frames before re-arming.
+      if (!isStrong) {
+        clearCounter++;
+        if (clearCounter >= 4) {
+          waitingForNewMatch = false;
+          currentMatchedId = null;
+          clearCounter = 0;
+          resultEl.textContent = "Looking for a match…";
+        }
+      } else {
+        clearCounter = 0;
+      }
+    } else if (isStrong && Date.now() > matchLockUntil) {
+      const id = best.ref.data.id;
+
+      if (id !== currentMatchedId && !popupShown) {
+        currentMatchedId = id;
+        resultEl.textContent = "✓ IMAGE MATCHED";
+        resultEl.className = "match";
+        setStatus("Match found!", "match");
+        matchLockUntil = Date.now() + 2500;
+        showInfoPopup(best.ref.data);
+      }
+    }
   }
 
   frame.delete();
   gray.delete();
-  kp.delete();
-  desc.delete();
 }
 
 function loop(now) {
   if (!running) return;
-
-  // Process roughly 4–5 frames per second rather than every camera frame.
-  if (now - lastProcess > 220) {
+  if (now-lastProcess > 300) {
     lastProcess = now;
-    try { processFrame(); }
-    catch(e) { console.log(e); }
+    try { processFrame(); } catch(e) { console.log(e); }
   }
-
   requestAnimationFrame(loop);
 }
 
-function init() {
+async function init() {
   video = document.getElementById("video");
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
+  orb = new cv.ORB(1200);
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatus("This browser does not provide camera access", "warn");
+    setStatus("This browser does not provide camera access","warn");
     return;
   }
 
-  prepareReference();
-  loadMatchData();
+  try {
+    await loadMatchData();
+  } catch(e) {
+    setStatus(e.message,"warn");
+    console.error(e);
+  }
 }
 
 document.getElementById("startBtn").onclick = startCamera;
 document.getElementById("stopBtn").onclick = stopCamera;
 document.getElementById("closeModal").onclick = closeInfoPopup;
-document.getElementById("infoModal").onclick = (e) => {
+document.getElementById("infoModal").onclick = e => {
   if (e.target.id === "infoModal") closeInfoPopup();
 };
-
-// OpenCV.js calls this when ready in many builds.
-function onOpenCvReady() {
-  if (referenceReady) return;
-  prepareReference();
-}
 
 const waitForOpenCV = setInterval(() => {
   if (opencvReady()) {
     clearInterval(waitForOpenCV);
     init();
   }
-}, 100);
-
+},100);
 </script>
 </body>
 </html>
