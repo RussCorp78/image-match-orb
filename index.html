@@ -74,6 +74,56 @@
   canvas { display:none; }
   .match { background: #145c2a !important; }
   .warn { background: #694b00 !important; }
+
+  #infoModal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background: rgba(0,0,0,.72);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #infoCard {
+    width: min(92vw, 520px);
+    max-height: 82vh;
+    overflow: auto;
+    background: white;
+    color: #222;
+    border-radius: 18px;
+    padding: 22px;
+    text-align: left;
+    box-shadow: 0 10px 40px rgba(0,0,0,.45);
+  }
+  #infoCard h2 {
+    margin: 0 0 10px;
+    font-size: 24px;
+  }
+  #infoCard p {
+    line-height: 1.5;
+    margin: 8px 0 18px;
+  }
+  #openLink {
+    display: inline-block;
+    background: #222;
+    color: white;
+    text-decoration: none;
+    padding: 11px 16px;
+    border-radius: 9px;
+    font-weight: bold;
+    margin-right: 8px;
+  }
+  #closeModal {
+    border: 0;
+    background: #ddd;
+    color: #222;
+    padding: 11px 16px;
+    border-radius: 9px;
+    font-weight: bold;
+    margin: 0;
+  }
+
 </style>
 </head>
 <body>
@@ -99,6 +149,16 @@
   <b>Verified matches:</b> <span id="verifiedMatches">—</span>
 </div>
 
+
+<div id="infoModal">
+  <div id="infoCard">
+    <h2 id="infoTitle">Match found</h2>
+    <p id="infoText"></p>
+    <a id="openLink" href="#" target="_blank" rel="noopener">Open webpage</a>
+    <button id="closeModal">Close</button>
+  </div>
+</div>
+
 <canvas id="canvas"></canvas>
 
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
@@ -120,6 +180,46 @@ const resultEl = document.getElementById("result");
 const refFeaturesEl = document.getElementById("refFeatures");
 const goodMatchesEl = document.getElementById("goodMatches");
 const verifiedMatchesEl = document.getElementById("verifiedMatches");
+
+
+let matchData = null;
+let popupShown = false;
+
+async function loadMatchData() {
+  try {
+    const response = await fetch("data.json");
+    matchData = await response.json();
+    setStatus("Ready — start the camera");
+  } catch (e) {
+    setStatus("Could not load data.json", "warn");
+    console.error(e);
+  }
+}
+
+function showInfoPopup() {
+  if (!matchData || !matchData.matches || !matchData.matches.length) return;
+
+  const item = matchData.matches[0];
+
+  document.getElementById("infoTitle").textContent = item.name;
+  document.getElementById("infoText").textContent = item.info;
+
+  const link = document.getElementById("openLink");
+  if (item.url) {
+    link.href = item.url;
+    link.style.display = "inline-block";
+  } else {
+    link.style.display = "none";
+  }
+
+  document.getElementById("infoModal").style.display = "flex";
+  popupShown = true;
+}
+
+function closeInfoPopup() {
+  document.getElementById("infoModal").style.display = "none";
+  popupShown = false;
+}
 
 function setStatus(text, cls="") {
   statusEl.textContent = text;
@@ -272,9 +372,8 @@ function processFrame() {
       setStatus("Match found!", "match");
       matchLockUntil = Date.now() + 2500;
 
-      // For the proof of concept we don't automatically leave the camera.
-      // Later this can become:
-      // window.location.href = "https://your-page.example/";
+      // Show the information stored in data.json.
+      if (!popupShown) showInfoPopup();
     } else if (Date.now() > matchLockUntil) {
       resultEl.textContent = "Looking for a match…";
       resultEl.className = "";
@@ -313,10 +412,15 @@ function init() {
   }
 
   prepareReference();
+  loadMatchData();
 }
 
 document.getElementById("startBtn").onclick = startCamera;
 document.getElementById("stopBtn").onclick = stopCamera;
+document.getElementById("closeModal").onclick = closeInfoPopup;
+document.getElementById("infoModal").onclick = (e) => {
+  if (e.target.id === "infoModal") closeInfoPopup();
+};
 
 // OpenCV.js calls this when ready in many builds.
 function onOpenCvReady() {
