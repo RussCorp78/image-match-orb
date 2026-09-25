@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Image Match Proof of Concept</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  h1 { font-size: 22px; margin: 14px 10px 6px; }
+  #status {
+    margin: 6px auto 10px;
+    padding: 9px 12px;
+    width: min(94vw, 700px);
+    border-radius: 10px;
+    background: #333;
+    font-weight: bold;
+  }
+  #cameraWrap {
+    position: relative;
+    width: min(96vw, 900px);
+    margin: auto;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+  }
+  video {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  #guide {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    top: 8%;
+    bottom: 8%;
+    border: 2px solid rgba(255,255,255,.65);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+  button {
+    border: 0;
+    border-radius: 9px;
+    padding: 12px 18px;
+    margin: 10px 4px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  #result {
+    width: min(94vw, 700px);
+    margin: 10px auto;
+    padding: 12px;
+    background: #222;
+    border-radius: 10px;
+    min-height: 48px;
+  }
+  #details {
+    width: min(94vw, 700px);
+    margin: 10px auto 20px;
+    text-align: left;
+    background: #1c1c1c;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  canvas { display:none; }
+  .match { background: #145c2a !important; }
+  .warn { background: #694b00 !important; }
+</style>
+</head>
+<body>
+
+<h1>Image Match — Proof of Concept</h1>
+<div id="status">Loading OpenCV…</div>
+
+<div id="cameraWrap">
+  <video id="video" autoplay playsinline muted></video>
+  <div id="guide"></div>
+</div>
+
+<button id="startBtn">Start camera</button>
+<button id="stopBtn">Stop</button>
+
+<div id="result">Point the camera at the reference image.</div>
+
+<div id="details">
+  <b>Reference:</b> target.jpg<br>
+  <b>Method:</b> ORB feature matching + geometric verification<br>
+  <b>Reference features:</b> <span id="refFeatures">—</span><br>
+  <b>Good matches:</b> <span id="goodMatches">—</span><br>
+  <b>Verified matches:</b> <span id="verifiedMatches">—</span>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+<script>
+let video, canvas, ctx;
+let stream = null;
+let running = false;
+let referenceReady = false;
+let refGray = null;
+let refKeypoints = null;
+let refDescriptors = null;
+let orb = null;
+let matcher = null;
+let lastProcess = 0;
+let matchLockUntil = 0;
+
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+const refFeaturesEl = document.getElementById("refFeatures");
+const goodMatchesEl = document.getElementById("goodMatches");
+const verifiedMatchesEl = document.getElementById("verifiedMatches");
+
+function setStatus(text, cls="") {
+  statusEl.textContent = text;
+  statusEl.className = cls;
+}
+
+function opencvReady() {
+  return typeof cv !== "undefined" && cv.Mat;
+}
+
+function prepareReference() {
+  const img = new Image();
+  img.onload = () => {
+    const temp = document.createElement("canvas");
+    const max = 1000;
+    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    temp.width = Math.round(img.naturalWidth * scale);
+    temp.height = Math.round(img.naturalHeight * scale);
+    const tctx = temp.getContext("2d");
+    tctx.drawImage(img, 0, 0, temp.width, temp.height);
+
+    const mat = cv.imread(temp);
+    refGray = new cv.Mat();
+    cv.cvtColor(mat, refGray, cv.COLOR_RGBA2GRAY);
+
+    orb = new cv.ORB(1200);
+    refKeypoints = new cv.KeyPointVector();
+    refDescriptors = new cv.Mat();
+
+    orb.detectAndCompute(refGray, new cv.Mat(), refKeypoints, refDescriptors);
+
+    matcher = new cv.BFMatcher(cv.NORM_HAMMING, false);
+
+    refFeaturesEl.textContent = refKeypoints.size;
+    referenceReady = true;
+
+    mat.delete();
+    setStatus("Ready — start the camera");
+  };
+  img.onerror = () => setStatus("Could not load target.jpg", "warn");
+  img.src = "target.jpg";
+}
+
+function startCamera() {
+  if (!referenceReady) {
+    resultEl.textContent = "Reference image is still loading.";
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    },
+    audio: false
+  }).then(s => {
+    stream = s;
+    video.srcObject = stream;
+    running = true;
+    setStatus("Camera running — point at the image");
+    resultEl.textContent = "Looking for a match…";
+    requestAnimationFrame(loop);
+  }).catch(err => {
+    setStatus("Camera could not start", "warn");
+    resultEl.textContent = err.name + ": " + err.message;
+  });
+}
+
+function stopCamera() {
+  running = false;
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+  setStatus("Camera stopped");
+}
+
+function processFrame() {
+  if (!video.videoWidth || !referenceReady) return;
+
+  // Keep the processing image modest in size for iPhone performance.
+  const maxWidth = 900;
+  const scale = Math.min(1, maxWidth / video.videoWidth);
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const frame = cv.imread(canvas);
+  const gray = new cv.Mat();
+  cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+
+  const kp = new cv.KeyPointVector();
+  const desc = new cv.Mat();
+  orb.detectAndCompute(gray, new cv.Mat(), kp, desc);
+
+  if (!desc.empty() && !refDescriptors.empty()) {
+    const knn = new cv.DMatchVectorVector();
+    matcher.knnMatch(refDescriptors, desc, knn, 2);
+
+    let good = 0;
+    const srcPts = [];
+    const dstPts = [];
+
+    for (let i = 0; i < knn.size(); i++) {
+      const pair = knn.get(i);
+      if (pair.size() >= 2) {
+        const m1 = pair.get(0);
+        const m2 = pair.get(1);
+
+        // Lowe ratio test.
+        if (m1.distance < 0.72 * m2.distance) {
+          good++;
+          const a = refKeypoints.get(m1.queryIdx).pt;
+          const b = kp.get(m1.trainIdx).pt;
+          srcPts.push(a.x, a.y);
+          dstPts.push(b.x, b.y);
+        }
+      }
+    }
+
+    let verified = 0;
+
+    // Homography verification makes this much more robust than simply
+    // counting visually similar features.
+    if (good >= 8) {
+      const src = cv.matFromArray(good, 1, cv.CV_32FC2, srcPts);
+      const dst = cv.matFromArray(good, 1, cv.CV_32FC2, dstPts);
+      const mask = new cv.Mat();
+
+      try {
+        cv.findHomography(src, dst, cv.RANSAC, 5, mask);
+        for (let i = 0; i < mask.rows; i++) {
+          if (mask.data[i]) verified++;
+        }
+      } catch(e) {}
+
+      src.delete();
+      dst.delete();
+      mask.delete();
+    }
+
+    goodMatchesEl.textContent = good;
+    verifiedMatchesEl.textContent = verified;
+
+    // Initial threshold. We'll tune this after testing on the real image.
+    if (verified >= 12 && good >= 18 && Date.now() > matchLockUntil) {
+      resultEl.textContent = "✓ IMAGE MATCHED";
+      resultEl.className = "match";
+      setStatus("Match found!", "match");
+      matchLockUntil = Date.now() + 2500;
+
+      // For the proof of concept we don't automatically leave the camera.
+      // Later this can become:
+      // window.location.href = "https://your-page.example/";
+    } else if (Date.now() > matchLockUntil) {
+      resultEl.textContent = "Looking for a match…";
+      resultEl.className = "";
+    }
+
+    knn.delete();
+  }
+
+  frame.delete();
+  gray.delete();
+  kp.delete();
+  desc.delete();
+}
+
+function loop(now) {
+  if (!running) return;
+
+  // Process roughly 4–5 frames per second rather than every camera frame.
+  if (now - lastProcess > 220) {
+    lastProcess = now;
+    try { processFrame(); }
+    catch(e) { console.log(e); }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function init() {
+  video = document.getElementById("video");
+  canvas = document.getElementById("canvas");
+  ctx = canvas.getContext("2d");
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus("This browser does not provide camera access", "warn");
+    return;
+  }
+
+  prepareReference();
+}
+
+document.getElementById("startBtn").onclick = startCamera;
+document.getElementById("stopBtn").onclick = stopCamera;
+
+// OpenCV.js calls this when ready in many builds.
+function onOpenCvReady() {
+  if (referenceReady) return;
+  prepareReference();
+}
+
+const waitForOpenCV = setInterval(() => {
+  if (opencvReady()) {
+    clearInterval(waitForOpenCV);
+    init();
+  }
+}, 100);
+
+</script>
+</body>
+</html>
