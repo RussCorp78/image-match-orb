@@ -2,8 +2,9 @@
   "matches": [
     {
       "id": "tintin",
+      "image": "tintin.jpg",
       "name": "Tintin & the Guard",
-      "info": "This is the test image for the image-recognition proof of concept. When the image is recognised, this information is displayed in the pop-up.",
+      "info": "This is the first test image. Replace this text with your own information.",
       "url": "https://en.wikipedia.org/wiki/The_Adventures_of_Tintin"
     }
   ]
