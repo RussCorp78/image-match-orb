@@ -39,7 +39,7 @@ canvas { display:none; }
 </head>
 <body>
 
-<h1>Image Match v1.0</h1>
+<h1>Image Match v1.1</h1>
 <div id="status">Loading OpenCV…</div>
 
 <div id="cameraWrap">
@@ -100,7 +100,7 @@ function opencvReady() {
 }
 
 async function loadMatchData() {
-  const response = await fetch("data.json");
+  const response = await fetch("data.json?t=" + Date.now());
   const data = await response.json();
 
   if (!data.matches || !data.matches.length) {
