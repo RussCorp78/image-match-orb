@@ -22,19 +22,23 @@ h1 {
 
 #cameraWrap { 
   position: relative; 
-  width: min(90vw, 300px); /* Responsive: max 300px wide, or 90% of small screens */
-  height: 200px;
-  margin: 20px auto;       /* 20px top/bottom space, 'auto' centers horizontally */
-  overflow: hidden; 
+  width: min(90vw, 350px); /* Adjusts nicely on both phones and laptops */
+  margin: 20px auto 15px;  /* Centers horizontally + gives space before buttons */
   border-radius: 12px; 
   background: #000; 
+  
+  /* CRITICAL CHANGES FOR THE BUTTONS: */
+  overflow: hidden;        /* Clips any video that spills past the box */
+  display: flex;           /* Creates a solid layout box */
+  align-items: center; 
+  justify-content: center;
 }
 
 video { 
   display: block; 
-  width: 100%;             /* Fills the 300px parent box cleanly */
-  height: 100%;
-  object-fit: cover;       /* Prevents video stretching or distortion */
+  width: 100%;             /* Fills the container width */
+  height: 220px;           /* Sets an explicit height so the box expands properly */
+  object-fit: cover;       /* Prevents video stretching */
 }
 
 #guide { 
@@ -49,14 +53,14 @@ video {
 }
 
 button { 
-  border:0; 
-  border-radius:9px; 
-  padding:12px 18px; 
-  margin:10px 4px; 
-  font-size:16px; 
-  font-weight:bold; 
+  display: inline-block;   /* Keeps buttons sitting side-by-side cleanly */
+  border: 0; 
+  border-radius: 9px; 
+  padding: 12px 18px; 
+  margin: 5px 4px 15px;    /* Margins stay proportional */
+  font-size: 16px; 
+  font-weight: bold; 
 }
-
 
 #result { 
   width:min(94vw,700px); 
