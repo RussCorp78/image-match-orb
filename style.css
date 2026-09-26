@@ -21,9 +21,11 @@ h1 {
 }
 
 #cameraWrap { 
-  position:relative; 
-  width:min(96vw,900px); 
-  margin:auto; 
+  position:absolute;
+  top: 20px;
+  left: 20px;
+  width:200px;
+  height: 200px;
   overflow:hidden; 
   border-radius:12px; 
   background:#000; 
