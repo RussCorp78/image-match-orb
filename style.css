@@ -142,3 +142,10 @@ canvas {
   font-weight:bold; 
   margin:0; 
 }
+
+.scroll-page {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    padding-bottom: 40px;
+}
