@@ -53,6 +53,7 @@ button {
   margin: 5px 4px 15px;    /* Margins stay proportional */
   font-size: 16px; 
   font-weight: bold; 
+  aligh: center;
 }
 
 #result { 
